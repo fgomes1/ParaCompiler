@@ -19,34 +19,6 @@ body {
 
 .toolbar {
   background-color: #2d2d30;
-  padding: 10px;
-  display: flex;
-  gap: 10px;
-  border-bottom: 1px solid #3e3e42;
-}
-
-.toolbar button {
-  background-color: #0e639c;
-  color: white;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 14px;
-  transition: background-color 0.2s;
-}
-
-.toolbar button:hover {
-  background-color: #1177bb;
-}
-
-.toolbar button:active {
-  background-color: #0d5a8f;
-}
-
-.auto-save-indicator {
-  margin-left: auto;
-  font-size: 12px;
   color: #858585;
   display: flex;
   align-items: center;
