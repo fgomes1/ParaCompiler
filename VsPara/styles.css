@@ -1,0 +1,117 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: #1e1e1e;
+  color: #d4d4d4;
+  overflow: hidden;
+}
+
+.container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+/* Toolbar */
+.toolbar {
+  background-color: #2d2d30;
+  padding: 10px;
+  display: flex;
+  gap: 10px;
+  border-bottom: 1px solid #3e3e42;
+}
+
+.toolbar button {
+  background-color: #0e639c;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.2s;
+}
+
+.toolbar button:hover {
+  background-color: #1177bb;
+}
+
+.toolbar button:active {
+  background-color: #0d5a8f;
+}
+
+/* Editor Area */
+.editor-area {
+  flex: 1;
+  display: flex;
+  background-color: #1e1e1e;
+  overflow: hidden;
+}
+
+#codeEditor {
+  width: 100%;
+  height: 100%;
+  background-color: #1e1e1e;
+  color: #d4d4d4;
+  border: none;
+  padding: 15px;
+  font-family: 'Consolas', 'Courier New', monospace;
+  font-size: 14px;
+  line-height: 1.5;
+  resize: none;
+  outline: none;
+}
+
+#codeEditor::placeholder {
+  color: #858585;
+}
+
+/* Console Area */
+.console-area {
+  height: 200px;
+  background-color: #1e1e1e;
+  border-top: 1px solid #3e3e42;
+  display: flex;
+  flex-direction: column;
+}
+
+.console-header {
+  background-color: #2d2d30;
+  padding: 8px 15px;
+  font-size: 13px;
+  font-weight: 600;
+  border-bottom: 1px solid #3e3e42;
+}
+
+.console-content {
+  flex: 1;
+  padding: 10px 15px;
+  font-family: 'Consolas', 'Courier New', monospace;
+  font-size: 13px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+}
+
+/* Scrollbar customization */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: #1e1e1e;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #424242;
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #4e4e4e;
+}

@@ -1,0 +1,13 @@
+{
+    "name": "paracompiler-ide",
+    "version": "1.0.0",
+    "description": "IDE básica para ParaCompiler",
+    "main": "main.js",
+    "scripts": {
+        "start": "electron .",
+        "build-java": "cd .. && javac -d bin -sourcepath src src/compiler/*.java"
+    },
+    "devDependencies": {
+        "electron": "^28.0.0"
+    }
+}

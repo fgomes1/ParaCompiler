@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ParaCompiler IDE</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <div class="container">
+        <!-- Toolbar -->
+        <div class="toolbar">
+            <button id="btnCompile">▶ Compilar</button>
+            <button id="btnOpen">📂 Abrir</button>
+            <button id="btnSave">💾 Salvar</button>
+        </div>
+
+        <!-- Editor Area -->
+        <div class="editor-area">
+            <textarea id="codeEditor" placeholder="Digite seu código ParaCompiler aqui...
+Exemplo:
+ohjata <
+  disk intera x -> 10.
+>"></textarea>
+        </div>
+
+        <!-- Console/Output -->
+        <div class="console-area">
+            <div class="console-header">Console</div>
+            <div id="consoleOutput" class="console-content">
+                Pronto para compilar...
+            </div>
+        </div>
+    </div>
+
+    <script src="renderer.js"></script>
+</body>
+
+</html>
