@@ -65,6 +65,9 @@ ipcMain.handle('compile:code', async (event, code) => {
             cwd: path.join(__dirname, '..')
         });
 
+        console.log('--- COMPILING CODE ---');
+        console.log(code);
+        console.log('----------------------');
         compiler.stdin.write(code + '\n\n');
         compiler.stdin.end();
 

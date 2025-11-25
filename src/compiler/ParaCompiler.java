@@ -26,36 +26,19 @@ public class ParaCompiler implements ParaCompilerConstants {
  }
 
   public static void main(String args[]) throws ParseException, IOException {
-    BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
-    String linha;
-
     System.out.println("=== Linguagem de programacao paraense COP30! ===");
     System.out.println("Digite seu programa:");
 
-    ParaCompiler parser = new ParaCompiler(System.in);
-
-    while (true) {
-      linha = reader.readLine();
-
-      if (linha == null || linha.trim().isEmpty()) {
-        System.out.println("Compilador encerrado.");
-        break;
-      }
-
-      parser.ReInit(new ByteArrayInputStream(linha.getBytes()));
-
-      try {
-        parser.program();
-        System.out.println("An\u00e1lise conclu\u00edda!");
-      } catch (Exception e) {
-        System.out.println("TU \u00c9 LESO! Gala Seca!! Erro de sintaxe!");
-        System.out.println(e.getMessage());
-      } catch (Error e) {
-        System.out.println("CAVALO MORDEU TUA CABE\u00c7A, LESO? Erro l\u00e9xico!");
-        System.out.println(e.getMessage());
-      }
-
-      System.out.println("\nDigite outro programa:");
+    try {
+      ParaCompiler parser = new ParaCompiler(System.in);
+      parser.program();
+      System.out.println("An\u00e1lise conclu\u00edda!");
+    } catch (Exception e) {
+      System.out.println("TU \u00c9 LESO! Gala Seca!! Erro de sintaxe!");
+      System.out.println(e.getMessage());
+    } catch (Error e) {
+      System.out.println("CAVALO MORDEU TUA CABE\u00c7A, LESO? Erro l\u00e9xico!");
+      System.out.println(e.getMessage());
     }
   }
 
