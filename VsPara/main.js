@@ -128,6 +128,27 @@ ipcMain.handle('file:create', async (event, folderPath, fileName) => {
     return { success: true, filePath };
 });
 
+ipcMain.handle('file:rename', async (event, oldPath, newPath) => {
+    if (fs.existsSync(newPath)) {
+        return { success: false, error: 'Um arquivo com este nome já existe.' };
+    }
+    try {
+        fs.renameSync(oldPath, newPath);
+        return { success: true };
+    } catch (err) {
+        return { success: false, error: err.message };
+    }
+});
+
+ipcMain.handle('file:delete', async (event, filePath) => {
+    try {
+        fs.unlinkSync(filePath);
+        return { success: true };
+    } catch (err) {
+        return { success: false, error: err.message };
+    }
+});
+
 app.whenReady().then(() => {
     createWindow();
 

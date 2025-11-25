@@ -46,6 +46,7 @@
         </div>
     </div>
 
+    <!-- Dialogs -->
     <div id="fileDialog" class="file-dialog" style="display: none;">
         <div class="dialog-content">
             <h3>Novo Arquivo</h3>
@@ -55,6 +56,26 @@
                 <button id="btnDialogCancel">Cancelar</button>
             </div>
         </div>
+    </div>
+
+    <div id="renameDialog" class="file-dialog" style="display: none;">
+        <div class="dialog-content">
+            <h3>Renomear Arquivo</h3>
+            <input type="text" id="renameInput" placeholder="novo_nome" />
+            <div class="dialog-buttons">
+                <button id="btnRenameOk">Renomear</button>
+                <button id="btnRenameCancel">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Context Menu -->
+    <div id="fileContextMenu" class="context-menu" style="display: none;">
+        <div class="menu-item" id="ctxRename">Renomear</div>
+        <div class="menu-item" id="ctxDelete">Excluir</div>
+        <div class="menu-separator"></div>
+        <div class="menu-item" id="ctxCut">Recortar</div>
+        <div class="menu-item" id="ctxPaste">Colar</div>
     </div>
 
     <script src="node_modules/monaco-editor/min/vs/loader.js"></script>

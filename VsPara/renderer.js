@@ -4,6 +4,10 @@ let fileList, currentFileSpan, autoSaveIndicator;
 let currentFolder = null;
 let currentFile = null;
 let autoSaveTimeout = null;
+let contextMenu = null;
+let selectedFileForMenu = null;
+let clipboardFile = null;
+let clipboardOperation = null; // 'cut' or 'copy'
 
 document.addEventListener('DOMContentLoaded', () => {
     consoleOutput = document.getElementById('consoleOutput');
@@ -14,6 +18,18 @@ document.addEventListener('DOMContentLoaded', () => {
     fileList = document.getElementById('fileList');
     currentFileSpan = document.getElementById('currentFile');
     autoSaveIndicator = document.getElementById('autoSaveIndicator');
+    contextMenu = document.getElementById('fileContextMenu');
+
+    // Context Menu Items
+    document.getElementById('ctxRename').addEventListener('click', () => handleRename());
+    document.getElementById('ctxDelete').addEventListener('click', () => handleDelete());
+    document.getElementById('ctxCut').addEventListener('click', () => handleCut());
+    document.getElementById('ctxPaste').addEventListener('click', () => handlePaste());
+
+    // Hide context menu on click elsewhere
+    document.addEventListener('click', () => {
+        contextMenu.style.display = 'none';
+    });
 
     // Initialize Monaco Editor
     require.config({ paths: { 'vs': 'node_modules/monaco-editor/min/vs' } });
@@ -165,6 +181,7 @@ function loadFileList(files) {
         fileItem.className = 'file-item';
         fileItem.innerHTML = '<span class="file-icon">📄</span>' + file;
         fileItem.onclick = () => openFileFromList(file);
+        fileItem.oncontextmenu = (e) => showContextMenu(e, file);
         fileList.appendChild(fileItem);
     });
 }
@@ -270,4 +287,129 @@ async function saveFile() {
     } catch (err) {
         updateConsole('❌ Erro ao salvar arquivo: ' + err.message);
     }
+}
+
+function showContextMenu(e, fileName) {
+    e.preventDefault();
+    selectedFileForMenu = fileName;
+    contextMenu.style.display = 'block';
+    contextMenu.style.left = e.pageX + 'px';
+    contextMenu.style.top = e.pageY + 'px';
+}
+
+async function handleRename() {
+    if (!currentFolder || !selectedFileForMenu) return;
+
+    const renameDialog = document.getElementById('renameDialog');
+    const renameInput = document.getElementById('renameInput');
+    const btnRenameOk = document.getElementById('btnRenameOk');
+    const btnRenameCancel = document.getElementById('btnRenameCancel');
+
+    renameDialog.style.display = 'flex';
+    renameInput.value = selectedFileForMenu;
+    renameInput.select();
+    renameInput.focus();
+
+    const doRename = async () => {
+        const newName = renameInput.value.trim();
+        if (!newName || newName === selectedFileForMenu) {
+            renameDialog.style.display = 'none';
+            cleanup();
+            return;
+        }
+
+        const fullNewName = newName.endsWith('.para') ? newName : newName + '.para';
+        const oldPath = currentFolder + '\\' + selectedFileForMenu;
+        const newPath = currentFolder + '\\' + fullNewName;
+
+        try {
+            const result = await window.electronAPI.renameFile(oldPath, newPath);
+            if (result.success) {
+                updateConsole('✅ Arquivo renomeado: ' + selectedFileForMenu + ' -> ' + fullNewName);
+                if (currentFile === selectedFileForMenu) {
+                    currentFile = fullNewName;
+                    currentFileSpan.textContent = fullNewName;
+                }
+                const folderResult = await window.electronAPI.openFolder();
+                if (folderResult.success) loadFileList(folderResult.files);
+            } else {
+                updateConsole('❌ Erro ao renomear: ' + result.error);
+            }
+        } catch (err) {
+            updateConsole('❌ Erro ao renomear: ' + err.message);
+        }
+        renameDialog.style.display = 'none';
+        cleanup();
+    };
+
+    const cleanup = () => {
+        btnRenameOk.removeEventListener('click', doRename);
+        btnRenameCancel.removeEventListener('click', cancelRename);
+        renameInput.removeEventListener('keypress', keypressHandler);
+    };
+
+    const cancelRename = () => {
+        renameDialog.style.display = 'none';
+        cleanup();
+    };
+
+    const keypressHandler = (e) => {
+        if (e.key === 'Enter') {
+            doRename();
+        } else if (e.key === 'Escape') {
+            cancelRename();
+        }
+    };
+
+    btnRenameOk.addEventListener('click', doRename);
+    btnRenameCancel.addEventListener('click', cancelRename);
+    renameInput.addEventListener('keypress', keypressHandler);
+}
+
+async function handleDelete() {
+    if (!currentFolder || !selectedFileForMenu) return;
+
+    if (!confirm('Tem certeza que deseja excluir ' + selectedFileForMenu + '?')) return;
+
+    const filePath = currentFolder + '\\' + selectedFileForMenu;
+
+    try {
+        const result = await window.electronAPI.deleteFile(filePath);
+        if (result.success) {
+            updateConsole('🗑️ Arquivo excluído: ' + selectedFileForMenu);
+            if (currentFile === selectedFileForMenu) {
+                currentFile = null;
+                editor.setValue('');
+                currentFileSpan.textContent = 'sem título';
+            }
+            const folderResult = await window.electronAPI.openFolder();
+            if (folderResult.success) loadFileList(folderResult.files);
+        } else {
+            updateConsole('❌ Erro ao excluir: ' + result.error);
+        }
+    } catch (err) {
+        updateConsole('❌ Erro ao excluir: ' + err.message);
+    }
+}
+
+function handleCut() {
+    if (!selectedFileForMenu) return;
+    clipboardFile = selectedFileForMenu;
+    clipboardOperation = 'cut';
+    updateConsole('✂️ Arquivo recortado: ' + selectedFileForMenu);
+}
+
+async function handlePaste() {
+    if (!currentFolder || !clipboardFile || clipboardOperation !== 'cut') return;
+
+    // For now, cut/paste just renames (moves) the file to the same folder (which does nothing)
+    // or we could implement moving to a different folder if we supported subfolders.
+    // Since we only support flat folder structure for now, let's assume the user might want to duplicate?
+    // Actually, "Cut" implies moving. If we are in the same folder, it does nothing unless we rename.
+    // Let's implement "Paste" as a "Rename" if it's a cut operation in the same folder?
+    // Or maybe the user expects to paste into a DIFFERENT folder?
+    // Given the current simple "Open Folder" architecture, we can't easily paste into another folder unless we open it.
+
+    // Let's just notify for now that we only support single folder.
+    updateConsole('⚠️ Recortar/Colar funciona melhor entre pastas diferentes. (Não implementado para mesma pasta)');
 }
