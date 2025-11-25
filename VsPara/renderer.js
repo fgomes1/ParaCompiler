@@ -119,10 +119,7 @@ async function createNewFile() {
                 currentFileSpan.textContent = fullFileName;
                 updateConsole('✅ Arquivo criado: ' + fullFileName);
 
-                const folderResult = await window.electronAPI.openFolder();
-                if (folderResult.success) {
-                    loadFileList(folderResult.files);
-                }
+                await refreshFileList();
             }
         } catch (err) {
             updateConsole('❌ Erro ao criar arquivo: ' + err.message);
@@ -277,10 +274,7 @@ async function saveFile() {
                 updateConsole('✅ Arquivo salvo: ' + result.filePath);
 
                 if (currentFolder) {
-                    const folderResult = await window.electronAPI.openFolder();
-                    if (folderResult.success) {
-                        loadFileList(folderResult.files);
-                    }
+                    await refreshFileList();
                 }
             }
         }
@@ -330,8 +324,7 @@ async function handleRename() {
                     currentFile = fullNewName;
                     currentFileSpan.textContent = fullNewName;
                 }
-                const folderResult = await window.electronAPI.openFolder();
-                if (folderResult.success) loadFileList(folderResult.files);
+                await refreshFileList();
             } else {
                 updateConsole('❌ Erro ao renomear: ' + result.error);
             }
@@ -382,8 +375,7 @@ async function handleDelete() {
                 editor.setValue('');
                 currentFileSpan.textContent = 'sem título';
             }
-            const folderResult = await window.electronAPI.openFolder();
-            if (folderResult.success) loadFileList(folderResult.files);
+            await refreshFileList();
         } else {
             updateConsole('❌ Erro ao excluir: ' + result.error);
         }
@@ -412,4 +404,16 @@ async function handlePaste() {
 
     // Let's just notify for now that we only support single folder.
     updateConsole('⚠️ Recortar/Colar funciona melhor entre pastas diferentes. (Não implementado para mesma pasta)');
+}
+
+async function refreshFileList() {
+    if (!currentFolder) return;
+    try {
+        const result = await window.electronAPI.readFolder(currentFolder);
+        if (result.success) {
+            loadFileList(result.files);
+        }
+    } catch (err) {
+        updateConsole('❌ Erro ao atualizar lista de arquivos: ' + err.message);
+    }
 }

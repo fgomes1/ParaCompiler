@@ -149,6 +149,17 @@ ipcMain.handle('file:delete', async (event, filePath) => {
     }
 });
 
+ipcMain.handle('file:readFolder', async (event, folderPath) => {
+    try {
+        const files = fs.readdirSync(folderPath)
+            .filter(file => file.endsWith('.para'))
+            .sort();
+        return { success: true, files };
+    } catch (err) {
+        return { success: false, error: err.message };
+    }
+});
+
 app.whenReady().then(() => {
     createWindow();
 

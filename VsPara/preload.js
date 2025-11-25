@@ -10,5 +10,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
     saveFileInFolder: (folderPath, fileName, content) => ipcRenderer.invoke('dialog:saveFileInFolder', folderPath, fileName, content),
     compile: (code) => ipcRenderer.invoke('compile:code', code),
     renameFile: (oldPath, newPath) => ipcRenderer.invoke('file:rename', oldPath, newPath),
-    deleteFile: (filePath) => ipcRenderer.invoke('file:delete', filePath)
+    deleteFile: (filePath) => ipcRenderer.invoke('file:delete', filePath),
+    readFolder: (folderPath) => ipcRenderer.invoke('file:readFolder', folderPath)
 });
