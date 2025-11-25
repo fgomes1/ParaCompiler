@@ -1,0 +1,241 @@
+/**
+ * JavaCC template file created by SF JavaCC plugin 1.5.28+ wizard for JavaCC 1.5.0+
+ */
+options
+{
+  static = false;
+  LOOKAHEAD = 2;
+}
+
+PARSER_BEGIN(ParaCompiler)
+package compiler;
+
+import java.util.HashMap;
+import java.io.*;
+
+
+public class ParaCompiler {
+
+
+  // <<< TABELA DE SÍMBOLOS >>>
+  private HashMap<String, String> symbolTable = new HashMap<>();
+
+  private void declareVariable(String nome, String tipo) throws ParseException {
+      if (symbolTable.containsKey(nome)) {
+          throw new ParseException("Variável '" + nome + "' já foi declarada!");
+      }
+      symbolTable.put(nome, tipo);
+  }
+
+  private void checkVariable(String nome) throws ParseException {
+      if (!symbolTable.containsKey(nome)) {
+          throw new ParseException("Variável '" + nome + "' NÃO foi declarada!");
+      }
+ }
+  
+  public static void main(String args[]) throws ParseException, IOException {
+    BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
+    String linha;
+
+    System.out.println("=== Linguagem de programacao paraense COP30! ===");
+    System.out.println("Digite seu programa:");
+
+    ParaCompiler parser = new ParaCompiler(System.in); 
+
+    while (true) {
+      linha = reader.readLine();
+
+      if (linha == null || linha.trim().isEmpty()) {
+        System.out.println("Compilador encerrado.");
+        break;
+      }
+
+      parser.ReInit(new ByteArrayInputStream(linha.getBytes()));
+
+      try {
+        parser.program();
+        System.out.println("Análise concluída!");
+      } catch (Exception e) {
+        System.out.println("TU É LESO! Gala Seca!! Erro de sintaxe!");
+        System.out.println(e.getMessage());
+      } catch (Error e) {
+        System.out.println("CAVALO MORDEU TUA CABEÇA, LESO? Erro léxico!");
+        System.out.println(e.getMessage());
+      }
+
+      System.out.println("\nDigite outro programa:");
+    }
+  }
+}
+
+
+
+PARSER_END(ParaCompiler)
+
+SKIP :
+{
+  " "
+| "\r"
+| "\t"
+| "\n"
+| "\u00A0" // <--- ADICIONE ESTA LINHA
+}
+
+TOKEN :
+{
+  < INICIOPROG   : "ohjata"     >
+| < ABREBLOCO    : "<"          >
+| < FECHABLOCO   : ">"          >
+| < FIMINSTRUC   : "."          >
+
+| < INICIAVAR    : "disk"       >
+| < FOR          : "dalhe"      >
+| < WHILE        : "caquiado"   >
+| < IF           : "emesmo"     >
+| < ELSE         : "masquando"  >
+| < ATRIBUICAO   : "->"         >
+
+| < TIPOCHAR     : "egua"       >
+| < TIPOINT      : "intera"     > 
+| < TIPOFLOAT    : "meroubalogo">
+  
+| < OPMAIOR      : ">>"         >
+| < OPMENOR      : "<<"         >
+| < OPDIF        : "!="         >
+| < OPIGUAL      : "=="         >
+| < OPINC        : "++"         >
+| < OPDEC        : "--"         >
+
+| < ABREPARENT   : "{"          >
+| < FECHAPARENT  : "}"          >
+| < VIRGULA      : ","          >
+
+| < PLUS         : "+"          >
+| < MINUS        : "-"          >
+| < TIMES        : "*"          >
+| < DIVIDE       : "/"          >
+
+
+
+| < IDENT        : ["a"-"z", "A"-"Z"](["a"-"z", "A"-"Z", "0"-"9"])* >
+| < NUM          : (< DIGITO >)+ ( "." (< DIGITO >)+ )? >
+| < STRING_LITERAL : "\"" (~["\""])* "\"" >
+
+| < #DIGITO      : [ "0"-"9" ] >
+}
+
+void program() :
+{}
+{
+	< INICIOPROG > < ABREBLOCO > (statement())* < FECHABLOCO > <EOF>
+}
+
+void statement() :
+{}
+{
+    ( declaracao() | atribuicao() | ifStatement() | whileStatement() | forStatement() | expression() ) <FIMINSTRUC>
+}
+
+void atribuicao() :
+{}
+{
+    < IDENT > < ATRIBUICAO > expression()
+}
+
+void declaracao() :
+{}
+{
+    < INICIAVAR > tipoDado() listaIdentificadores()
+}
+
+void tipoDado() :
+{}
+{
+    ( < TIPOCHAR > | < TIPOFLOAT > | < TIPOINT > )
+}
+
+void listaIdentificadores() :
+{
+  Token id;
+}
+{
+    id = <IDENT>
+      {
+        declareVariable(id.image, "VAR");
+      }
+    ( <ATRIBUICAO> expression() )?
+    ( <VIRGULA>
+        id = <IDENT>
+        {
+          declareVariable(id.image, "VAR");
+        }
+        ( <ATRIBUICAO> expression() )?
+    )*
+}
+
+
+void expression() :
+{}
+{
+  term() ( ( < PLUS > | < MINUS > ) term() )*
+}
+
+void term() :
+{}
+{
+  factor() ( ( < TIMES > | < DIVIDE > ) factor() )*
+}
+
+void factor() :
+{
+  Token id;
+}
+{
+    <NUM>
+  | id = <IDENT> { checkVariable(id.image); }
+  | <STRING_LITERAL>
+  | ( <ABREPARENT> expression() <FECHAPARENT> )
+}
+
+void opLog() :
+{}
+{
+  ( < OPMAIOR >  | < OPMENOR > | < OPDIF > | < OPIGUAL > )
+}
+
+
+void expLogica() :
+{}
+{
+  expression() opLog() expression()
+}
+
+
+void ifStatement() :
+{}
+{
+    < IF > < ABREPARENT > expLogica() < FECHAPARENT >
+    < ABREBLOCO > (statement())* < FECHABLOCO >
+    ( < ELSE > < ABREBLOCO > (statement())* < FECHABLOCO > )?
+}
+
+void whileStatement() :
+{}
+{
+    < WHILE > < ABREPARENT > expLogica() < FECHAPARENT >
+    < ABREBLOCO > (statement())* < FECHABLOCO >
+}
+
+
+void forIncremento() :
+{}
+{
+    < IDENT > < ATRIBUICAO > expression()
+}
+
+void forStatement() :
+{}
+{
+    < FOR > < ABREPARENT > declaracao() expLogica() < FIMINSTRUC > forIncremento() < FECHAPARENT >
+    < ABREBLOCO > (statement())* < FECHABLOCO >
+}
