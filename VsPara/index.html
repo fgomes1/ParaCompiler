@@ -12,18 +12,39 @@
     <div class="container">
         <!-- Toolbar -->
         <div class="toolbar">
+            <button id="btnOpenFolder">📁 Abrir Pasta</button>
+            <button id="btnNewFile">📄 Novo Arquivo</button>
             <button id="btnCompile">▶ Compilar</button>
-            <button id="btnOpen">📂 Abrir</button>
-            <button id="btnSave">💾 Salvar</button>
+            <button id="btnSave">💾 Salvar (Ctrl+S)</button>
+            <span id="autoSaveIndicator" class="auto-save-indicator"></span>
         </div>
 
-        <!-- Editor Area -->
-        <div class="editor-area">
-            <textarea id="codeEditor" placeholder="Digite seu código ParaCompiler aqui...
+        <!-- Main Content Area -->
+        <div class="main-content">
+            <!-- Sidebar File Explorer -->
+            <div class="sidebar">
+                <div class="sidebar-header">
+                    <span>EXPLORADOR</span>
+                </div>
+                <div id="fileList" class="file-list">
+                    <div class="no-folder">Nenhuma pasta aberta</div>
+                </div>
+            </div>
+
+            <!-- Editor Area -->
+            <div class="editor-section">
+                <div class="editor-header">
+                    <span id="currentFile">sem título</span>
+                </div>
+                <div class="editor-area">
+                    <textarea id="codeEditor" placeholder="Digite seu código ParaCompiler aqui...
+
 Exemplo:
 ohjata <
   disk intera x -> 10.
 >"></textarea>
+                </div>
+            </div>
         </div>
 
         <!-- Console/Output -->

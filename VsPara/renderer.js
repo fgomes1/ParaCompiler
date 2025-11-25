@@ -1,26 +1,131 @@
-const { spawn } = require('child_process');
-const fs = require('fs');
-const path = require('path');
+let codeEditor, consoleOutput, btnCompile, btnOpenFolder, btnNewFile, btnSave;
+let fileList, currentFileSpan, autoSaveIndicator;
+let currentFolder = null;
+let currentFile = null;
+let autoSaveTimeout = null;
 
-// Elementos da UI
-let codeEditor, consoleOutput, btnCompile, btnOpen, btnSave;
-
-// Inicializar quando o DOM carregar
 document.addEventListener('DOMContentLoaded', () => {
     codeEditor = document.getElementById('codeEditor');
     consoleOutput = document.getElementById('consoleOutput');
     btnCompile = document.getElementById('btnCompile');
-    btnOpen = document.getElementById('btnOpen');
+    btnOpenFolder = document.getElementById('btnOpenFolder');
+    btnNewFile = document.getElementById('btnNewFile');
     btnSave = document.getElementById('btnSave');
+    fileList = document.getElementById('fileList');
+    currentFileSpan = document.getElementById('currentFile');
+    autoSaveIndicator = document.getElementById('autoSaveIndicator');
 
-    // Event Listeners
     btnCompile.addEventListener('click', compile);
-    btnOpen.addEventListener('click', openFile);
+    btnOpenFolder.addEventListener('click', openFolder);
+    btnNewFile.addEventListener('click', createNewFile);
     btnSave.addEventListener('click', saveFile);
+
+    codeEditor.addEventListener('input', () => {
+        if (currentFolder && currentFile) {
+            clearTimeout(autoSaveTimeout);
+            autoSaveIndicator.textContent = 'Salvando...';
+            autoSaveIndicator.className = 'auto-save-indicator saving';
+
+            autoSaveTimeout = setTimeout(async () => {
+                await autoSave();
+            }, 1000);
+        }
+    });
+
+    document.addEventListener('keydown', (e) => {
+        if (e.ctrlKey && e.key === 's') {
+            e.preventDefault();
+            saveFile();
+        }
+    });
 });
 
-// Função para compilar
-function compile() {
+async function openFolder() {
+    try {
+        const result = await window.electronAPI.openFolder();
+
+        if (result.success) {
+            currentFolder = result.folderPath;
+            updateConsole('✅ Pasta aberta: ' + result.folderPath);
+            loadFileList(result.files);
+        }
+    } catch (err) {
+        updateConsole('❌ Erro ao abrir pasta: ' + err.message);
+    }
+}
+
+async function createNewFile() {
+    if (!currentFolder) {
+        updateConsole('❌ Abra uma pasta primeiro!');
+        return;
+    }
+
+    const fileName = prompt('Nome do arquivo (sem extensão):', 'novo_arquivo');
+    if (!fileName) return;
+
+    const fullFileName = fileName.endsWith('.para') ? fileName : fileName + '.para';
+
+    try {
+        const result = await window.electronAPI.createNewFile(currentFolder, fullFileName);
+
+        if (result.success) {
+            currentFile = fullFileName;
+            codeEditor.value = '';
+            currentFileSpan.textContent = fullFileName;
+            updateConsole('✅ Arquivo criado: ' + fullFileName);
+
+            const folderResult = await window.electronAPI.openFolder();
+            if (folderResult.success) {
+                loadFileList(folderResult.files);
+            }
+        }
+    } catch (err) {
+        updateConsole('❌ Erro ao criar arquivo: ' + err.message);
+    }
+}
+
+function loadFileList(files) {
+    fileList.innerHTML = '';
+
+    if (files.length === 0) {
+        fileList.innerHTML = '<div class="no-folder">Nenhum arquivo .para encontrado</div>';
+        return;
+    }
+
+    files.forEach(file => {
+        const fileItem = document.createElement('div');
+        fileItem.className = 'file-item';
+        fileItem.innerHTML = '<span class="file-icon">📄</span>' + file;
+        fileItem.onclick = () => openFileFromList(file);
+        fileList.appendChild(fileItem);
+    });
+}
+
+async function openFileFromList(fileName) {
+    if (!currentFolder) return;
+
+    try {
+        const result = await window.electronAPI.openFileFromPath(currentFolder, fileName);
+
+        if (result.success) {
+            currentFile = fileName;
+            codeEditor.value = result.content;
+            currentFileSpan.textContent = fileName;
+            updateConsole('✅ Arquivo aberto: ' + fileName);
+
+            document.querySelectorAll('.file-item').forEach(item => {
+                item.classList.remove('active');
+                if (item.textContent.includes(fileName)) {
+                    item.classList.add('active');
+                }
+            });
+        }
+    } catch (err) {
+        updateConsole('❌ Erro ao abrir arquivo: ' + err.message);
+    }
+}
+
+async function compile() {
     const code = codeEditor.value;
 
     if (!code.trim()) {
@@ -30,94 +135,68 @@ function compile() {
 
     updateConsole('🔄 Compilando...\n');
 
-    // Caminho para o compilador Java (ajuste conforme necessário)
-    const javaPath = 'java';
-    const classPath = path.join(__dirname, '..', 'bin');
+    try {
+        const result = await window.electronAPI.compile(code);
 
-    // Executar o compilador
-    const compiler = spawn(javaPath, ['-cp', classPath, 'compiler.ParaCompiler'], {
-        cwd: path.join(__dirname, '..')
-    });
-
-    // Enviar código para o compilador via stdin
-    compiler.stdin.write(code + '\n\n'); // Duas quebras de linha para encerrar
-    compiler.stdin.end();
-
-    let output = '';
-    let error = '';
-
-    compiler.stdout.on('data', (data) => {
-        output += data.toString();
-    });
-
-    compiler.stderr.on('data', (data) => {
-        error += data.toString();
-    });
-
-    compiler.on('close', (code) => {
-        if (error) {
-            updateConsole('❌ Erro:\n' + error);
-        } else if (output) {
-            updateConsole('✅ Saída:\n' + output);
+        if (result.error) {
+            updateConsole('❌ Erro:\n' + result.error);
+        } else if (result.output) {
+            updateConsole('✅ Saída:\n' + result.output);
         } else {
             updateConsole('⚠️ Nenhuma saída gerada.');
         }
-    });
-
-    compiler.on('error', (err) => {
+    } catch (err) {
         updateConsole('❌ Erro ao executar compilador:\n' + err.message + '\n\nVerifique se o Java está instalado e o código foi compilado.');
-    });
+    }
 }
 
-// Função para atualizar o console
 function updateConsole(message) {
     consoleOutput.textContent = message;
 }
 
-// Função para abrir arquivo
-function openFile() {
-    const { dialog } = require('electron').remote || require('@electron/remote');
+async function autoSave() {
+    if (!currentFolder || !currentFile) return;
 
-    dialog.showOpenDialog({
-        properties: ['openFile'],
-        filters: [
-            { name: 'ParaCompiler Files', extensions: ['para', 'txt'] },
-            { name: 'All Files', extensions: ['*'] }
-        ]
-    }).then(result => {
-        if (!result.canceled && result.filePaths.length > 0) {
-            const filePath = result.filePaths[0];
-            fs.readFile(filePath, 'utf8', (err, data) => {
-                if (err) {
-                    updateConsole('❌ Erro ao abrir arquivo: ' + err.message);
-                } else {
-                    codeEditor.value = data;
-                    updateConsole('✅ Arquivo aberto: ' + filePath);
-                }
-            });
-        }
-    });
+    try {
+        const content = codeEditor.value;
+        await window.electronAPI.saveFileInFolder(currentFolder, currentFile, content);
+        autoSaveIndicator.textContent = 'Salvo ✓';
+        autoSaveIndicator.className = 'auto-save-indicator saved';
+
+        setTimeout(() => {
+            autoSaveIndicator.textContent = '';
+        }, 2000);
+    } catch (err) {
+        autoSaveIndicator.textContent = 'Erro ao salvar';
+        autoSaveIndicator.className = 'auto-save-indicator';
+    }
 }
 
-// Função para salvar arquivo
-function saveFile() {
-    const { dialog } = require('electron').remote || require('@electron/remote');
+async function saveFile() {
+    try {
+        const content = codeEditor.value;
 
-    dialog.showSaveDialog({
-        filters: [
-            { name: 'ParaCompiler Files', extensions: ['para'] },
-            { name: 'Text Files', extensions: ['txt'] }
-        ]
-    }).then(result => {
-        if (!result.canceled && result.filePath) {
-            const content = codeEditor.value;
-            fs.writeFile(result.filePath, content, 'utf8', (err) => {
-                if (err) {
-                    updateConsole('❌ Erro ao salvar arquivo: ' + err.message);
-                } else {
-                    updateConsole('✅ Arquivo salvo: ' + result.filePath);
+        if (currentFolder && currentFile) {
+            const result = await window.electronAPI.saveFileInFolder(currentFolder, currentFile, content);
+            if (result.success) {
+                updateConsole('✅ Arquivo salvo: ' + currentFile);
+                autoSaveIndicator.textContent = 'Salvo ✓';
+                autoSaveIndicator.className = 'auto-save-indicator saved';
+            }
+        } else {
+            const result = await window.electronAPI.saveFile(content);
+            if (result.success) {
+                updateConsole('✅ Arquivo salvo: ' + result.filePath);
+
+                if (currentFolder) {
+                    const folderResult = await window.electronAPI.openFolder();
+                    if (folderResult.success) {
+                        loadFileList(folderResult.files);
+                    }
                 }
-            });
+            }
         }
-    });
+    } catch (err) {
+        updateConsole('❌ Erro ao salvar arquivo: ' + err.message);
+    }
 }
