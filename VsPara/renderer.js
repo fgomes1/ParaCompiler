@@ -60,28 +60,80 @@ async function createNewFile() {
         return;
     }
 
-    const fileName = prompt('Nome do arquivo (sem extensão):', 'novo_arquivo');
-    if (!fileName) return;
+    // Mostrar dialog
+    const fileDialog = document.getElementById('fileDialog');
+    const fileNameInput = document.getElementById('fileNameInput');
+    fileDialog.style.display = 'flex';
+    fileNameInput.value = 'novo_arquivo';
+    fileNameInput.select();
+    fileNameInput.focus();
 
-    const fullFileName = fileName.endsWith('.para') ? fileName : fileName + '.para';
-
-    try {
-        const result = await window.electronAPI.createNewFile(currentFolder, fullFileName);
-
-        if (result.success) {
-            currentFile = fullFileName;
-            codeEditor.value = '';
-            currentFileSpan.textContent = fullFileName;
-            updateConsole('✅ Arquivo criado: ' + fullFileName);
-
-            const folderResult = await window.electronAPI.openFolder();
-            if (folderResult.success) {
-                loadFileList(folderResult.files);
-            }
+    // Handler para criar
+    const createFile = async () => {
+        const fileName = fileNameInput.value.trim();
+        if (!fileName) {
+            fileDialog.style.display = 'none';
+            return;
         }
-    } catch (err) {
-        updateConsole('❌ Erro ao criar arquivo: ' + err.message);
-    }
+
+        const fullFileName = fileName.endsWith('.para') ? fileName : fileName + '.para';
+
+        try {
+            const result = await window.electronAPI.createNewFile(currentFolder, fullFileName);
+
+            if (result.success) {
+                currentFile = fullFileName;
+                codeEditor.value = '';
+                currentFileSpan.textContent = fullFileName;
+                updateConsole('✅ Arquivo criado: ' + fullFileName);
+
+                const folderResult = await window.electronAPI.openFolder();
+                if (folderResult.success) {
+                    loadFileList(folderResult.files);
+                }
+            }
+        } catch (err) {
+            updateConsole('❌ Erro ao criar arquivo: ' + err.message);
+        }
+
+        fileDialog.style.display = 'none';
+    };
+
+    // Botão OK
+    const btnOk = document.getElementById('btnDialogOk');
+    const btnCancel = document.getElementById('btnDialogCancel');
+
+    const okHandler = () => {
+        createFile();
+        btnOk.removeEventListener('click', okHandler);
+        btnCancel.removeEventListener('click', cancelHandler);
+        fileNameInput.removeEventListener('keypress', keypressHandler);
+    };
+
+    const cancelHandler = () => {
+        fileDialog.style.display = 'none';
+        btnOk.removeEventListener('click', okHandler);
+        btnCancel.removeEventListener('click', cancelHandler);
+        fileNameInput.removeEventListener('keypress', keypressHandler);
+    };
+
+    const keypressHandler = (e) => {
+        if (e.key === 'Enter') {
+            createFile();
+            btnOk.removeEventListener('click', okHandler);
+            btnCancel.removeEventListener('click', cancelHandler);
+            fileNameInput.removeEventListener('keypress', keypressHandler);
+        } else if (e.key === 'Escape') {
+            fileDialog.style.display = 'none';
+            btnOk.removeEventListener('click', okHandler);
+            btnCancel.removeEventListener('click', cancelHandler);
+            fileNameInput.removeEventListener('keypress', keypressHandler);
+        }
+    };
+
+    btnOk.addEventListener('click', okHandler);
+    btnCancel.addEventListener('click', cancelHandler);
+    fileNameInput.addEventListener('keypress', keypressHandler);
 }
 
 function loadFileList(files) {

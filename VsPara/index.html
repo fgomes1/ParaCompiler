@@ -10,7 +10,6 @@
 
 <body>
     <div class="container">
-        <!-- Toolbar -->
         <div class="toolbar">
             <button id="btnOpenFolder">📁 Abrir Pasta</button>
             <button id="btnNewFile">📄 Novo Arquivo</button>
@@ -19,9 +18,7 @@
             <span id="autoSaveIndicator" class="auto-save-indicator"></span>
         </div>
 
-        <!-- Main Content Area -->
         <div class="main-content">
-            <!-- Sidebar File Explorer -->
             <div class="sidebar">
                 <div class="sidebar-header">
                     <span>EXPLORADOR</span>
@@ -31,7 +28,6 @@
                 </div>
             </div>
 
-            <!-- Editor Area -->
             <div class="editor-section">
                 <div class="editor-header">
                     <span id="currentFile">sem título</span>
@@ -47,11 +43,21 @@ ohjata <
             </div>
         </div>
 
-        <!-- Console/Output -->
         <div class="console-area">
             <div class="console-header">Console</div>
             <div id="consoleOutput" class="console-content">
                 Pronto para compilar...
+            </div>
+        </div>
+    </div>
+
+    <div id="fileDialog" class="file-dialog" style="display: none;">
+        <div class="dialog-content">
+            <h3>Novo Arquivo</h3>
+            <input type="text" id="fileNameInput" placeholder="nome_arquivo" />
+            <div class="dialog-buttons">
+                <button id="btnDialogOk">Criar</button>
+                <button id="btnDialogCancel">Cancelar</button>
             </div>
         </div>
     </div>

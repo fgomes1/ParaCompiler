@@ -18,6 +18,9 @@ function createWindow() {
     });
 
     mainWindow.loadFile('index.html');
+
+    // Abrir DevTools para debug
+    mainWindow.webContents.openDevTools();
 }
 
 // IPC Handlers
