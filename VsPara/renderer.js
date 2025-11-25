@@ -1,11 +1,11 @@
-let codeEditor, consoleOutput, btnCompile, btnOpenFolder, btnNewFile, btnSave;
+let editor;
+let consoleOutput, btnCompile, btnOpenFolder, btnNewFile, btnSave;
 let fileList, currentFileSpan, autoSaveIndicator;
 let currentFolder = null;
 let currentFile = null;
 let autoSaveTimeout = null;
 
 document.addEventListener('DOMContentLoaded', () => {
-    codeEditor = document.getElementById('codeEditor');
     consoleOutput = document.getElementById('consoleOutput');
     btnCompile = document.getElementById('btnCompile');
     btnOpenFolder = document.getElementById('btnOpenFolder');
@@ -15,22 +15,38 @@ document.addEventListener('DOMContentLoaded', () => {
     currentFileSpan = document.getElementById('currentFile');
     autoSaveIndicator = document.getElementById('autoSaveIndicator');
 
+    // Initialize Monaco Editor
+    require.config({ paths: { 'vs': 'node_modules/monaco-editor/min/vs' } });
+    require(['vs/editor/editor.main'], function () {
+        editor = monaco.editor.create(document.getElementById('monaco-editor-container'), {
+            value: [
+                'ohjata <',
+                '  disk intera x -> 10.',
+                '>'
+            ].join('\n'),
+            language: 'plaintext',
+            theme: 'vs-dark',
+            automaticLayout: true
+        });
+
+        // Auto-save listener
+        editor.onDidChangeModelContent(() => {
+            if (currentFolder && currentFile) {
+                clearTimeout(autoSaveTimeout);
+                autoSaveIndicator.textContent = 'Salvando...';
+                autoSaveIndicator.className = 'auto-save-indicator saving';
+
+                autoSaveTimeout = setTimeout(async () => {
+                    await autoSave();
+                }, 1000);
+            }
+        });
+    });
+
     btnCompile.addEventListener('click', compile);
     btnOpenFolder.addEventListener('click', openFolder);
     btnNewFile.addEventListener('click', createNewFile);
     btnSave.addEventListener('click', saveFile);
-
-    codeEditor.addEventListener('input', () => {
-        if (currentFolder && currentFile) {
-            clearTimeout(autoSaveTimeout);
-            autoSaveIndicator.textContent = 'Salvando...';
-            autoSaveIndicator.className = 'auto-save-indicator saving';
-
-            autoSaveTimeout = setTimeout(async () => {
-                await autoSave();
-            }, 1000);
-        }
-    });
 
     document.addEventListener('keydown', (e) => {
         if (e.ctrlKey && e.key === 's') {
@@ -83,7 +99,7 @@ async function createNewFile() {
 
             if (result.success) {
                 currentFile = fullFileName;
-                codeEditor.value = '';
+                editor.setValue('');
                 currentFileSpan.textContent = fullFileName;
                 updateConsole('✅ Arquivo criado: ' + fullFileName);
 
@@ -161,7 +177,7 @@ async function openFileFromList(fileName) {
 
         if (result.success) {
             currentFile = fileName;
-            codeEditor.value = result.content;
+            editor.setValue(result.content);
             currentFileSpan.textContent = fileName;
             updateConsole('✅ Arquivo aberto: ' + fileName);
 
@@ -178,7 +194,8 @@ async function openFileFromList(fileName) {
 }
 
 async function compile() {
-    const code = codeEditor.value;
+    if (!editor) return;
+    const code = editor.getValue();
 
     if (!code.trim()) {
         updateConsole('❌ Erro: Digite algum código antes de compilar!');
@@ -210,7 +227,8 @@ async function autoSave() {
     if (!currentFolder || !currentFile) return;
 
     try {
-        const content = codeEditor.value;
+        if (!editor) return;
+        const content = editor.getValue();
         await window.electronAPI.saveFileInFolder(currentFolder, currentFile, content);
         autoSaveIndicator.textContent = 'Salvo ✓';
         autoSaveIndicator.className = 'auto-save-indicator saved';
@@ -226,7 +244,8 @@ async function autoSave() {
 
 async function saveFile() {
     try {
-        const content = codeEditor.value;
+        if (!editor) return;
+        const content = editor.getValue();
 
         if (currentFolder && currentFile) {
             const result = await window.electronAPI.saveFileInFolder(currentFolder, currentFile, content);
