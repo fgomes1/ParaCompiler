@@ -4,7 +4,7 @@
 options
 {
   static = false;
-  LOOKAHEAD = 2;
+  LOOKAHEAD = 1;
 }
 
 PARSER_BEGIN(ParaCompiler)
@@ -12,6 +12,7 @@ package compiler;
 
 import java.util.HashMap;
 import java.io.*;
+import compiler.ast.*;
 
 
 public class ParaCompiler {
@@ -32,6 +33,13 @@ public class ParaCompiler {
           throw new ParseException("Variável '" + nome + "' NÃO foi declarada!");
       }
  }
+
+  void recoverFromError() {
+      Token t;
+      do {
+          t = getNextToken();
+      } while (t.kind != FIMINSTRUC && t.kind != FECHABLOCO && t.kind != EOF);
+  }
   
   public static void main(String args[]) throws ParseException, IOException {
     BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
@@ -53,8 +61,9 @@ public class ParaCompiler {
       parser.ReInit(new ByteArrayInputStream(linha.getBytes()));
 
       try {
-        parser.program();
+        Program prog = parser.program();
         System.out.println("Análise concluída!");
+        System.out.println(prog.toString());
       } catch (Exception e) {
         System.out.println("TU É LESO! Gala Seca!! Erro de sintaxe!");
         System.out.println(e.getMessage());
@@ -124,118 +133,201 @@ TOKEN :
 | < #DIGITO      : [ "0"-"9" ] >
 }
 
-void program() :
-{}
+Program program() :
 {
-	< INICIOPROG > < ABREBLOCO > (statement())* < FECHABLOCO > <EOF>
+    Program prog = new Program();
+    Statement stmt;
+}
+{
+	< INICIOPROG > < ABREBLOCO > 
+    ( 
+        try {
+            stmt = statement() { prog.addStatement(stmt); } 
+        } catch (ParseException e) {
+            System.out.println(e.toString());
+            recoverFromError();
+        }
+    )* 
+    < FECHABLOCO > <EOF>
+	{ return prog; }
 }
 
-void statement() :
-{}
+Statement statement() :
 {
-    ( declaracao() | atribuicao() | ifStatement() | whileStatement() | forStatement() | expression() ) <FIMINSTRUC>
+    Statement stmt;
+    Expression expr;
+}
+{
+    (
+      stmt = declaracao()
+    | stmt = ifStatement()
+    | stmt = whileStatement()
+    | stmt = forStatement()
+    | expr = expression()
+      (
+        <ATRIBUICAO>
+        {
+            if (!(expr instanceof Identifier)) {
+                throw new ParseException("Left side of assignment must be an identifier.");
+            }
+        }
+        {
+             Expression right = expression();
+             stmt = new Assignment(((Identifier)expr).getName(), right);
+        }
+      |
+        { stmt = expr; }
+      )
+    )
+    <FIMINSTRUC>
+    { return stmt; }
 }
 
-void atribuicao() :
-{}
+Declaration declaracao() :
 {
-    < IDENT > < ATRIBUICAO > expression()
+    String type;
+    Declaration decl;
+}
+{
+    < INICIAVAR > type = tipoDado() { decl = new Declaration(type); } listaIdentificadores(decl)
+    { return decl; }
 }
 
-void declaracao() :
-{}
+String tipoDado() :
 {
-    < INICIAVAR > tipoDado() listaIdentificadores()
+    Token t;
+}
+{
+    ( t = < TIPOCHAR > | t = < TIPOFLOAT > | t = < TIPOINT > )
+    { return t.image; }
 }
 
-void tipoDado() :
-{}
-{
-    ( < TIPOCHAR > | < TIPOFLOAT > | < TIPOINT > )
-}
-
-void listaIdentificadores() :
+void listaIdentificadores(Declaration decl) :
 {
   Token id;
+  Expression expr = null;
 }
 {
     id = <IDENT>
       {
         declareVariable(id.image, "VAR");
       }
-    ( <ATRIBUICAO> expression() )?
+    ( <ATRIBUICAO> expr = expression() )?
+    { decl.addVariable(id.image, expr); expr = null; }
     ( <VIRGULA>
         id = <IDENT>
         {
           declareVariable(id.image, "VAR");
         }
-        ( <ATRIBUICAO> expression() )?
+        ( <ATRIBUICAO> expr = expression() )?
+        { decl.addVariable(id.image, expr); expr = null; }
     )*
 }
 
 
-void expression() :
-{}
+Expression expression() :
 {
-  term() ( ( < PLUS > | < MINUS > ) term() )*
-}
-
-void term() :
-{}
-{
-  factor() ( ( < TIMES > | < DIVIDE > ) factor() )*
-}
-
-void factor() :
-{
-  Token id;
+  Expression left;
+  Expression right;
+  Token op;
 }
 {
-    <NUM>
-  | id = <IDENT> { checkVariable(id.image); }
-  | <STRING_LITERAL>
-  | ( <ABREPARENT> expression() <FECHAPARENT> )
+  left = term() ( ( op = < PLUS > | op = < MINUS > ) right = term() { left = new BinaryExpression(left, op.image, right); } )*
+  { return left; }
 }
 
-void opLog() :
-{}
+Expression term() :
 {
-  ( < OPMAIOR >  | < OPMENOR > | < OPDIF > | < OPIGUAL > )
+  Expression left;
+  Expression right;
+  Token op;
+}
+{
+  left = factor() ( ( op = < TIMES > | op = < DIVIDE > ) right = factor() { left = new BinaryExpression(left, op.image, right); } )*
+  { return left; }
 }
 
-
-void expLogica() :
-{}
+Expression factor() :
 {
-  expression() opLog() expression()
+  Token t;
+  Expression expr;
+}
+{
+    t = <NUM> { return new Literal(t.image, "NUM"); }
+  | t = <IDENT> { checkVariable(t.image); return new Identifier(t.image); }
+  | t = <STRING_LITERAL> { return new Literal(t.image, "STRING"); }
+  | ( <ABREPARENT> expr = expression() <FECHAPARENT> { return expr; } )
 }
 
-
-void ifStatement() :
-{}
+String opLog() :
 {
-    < IF > < ABREPARENT > expLogica() < FECHAPARENT >
-    < ABREBLOCO > (statement())* < FECHABLOCO >
-    ( < ELSE > < ABREBLOCO > (statement())* < FECHABLOCO > )?
+    Token t;
 }
-
-void whileStatement() :
-{}
 {
-    < WHILE > < ABREPARENT > expLogica() < FECHAPARENT >
-    < ABREBLOCO > (statement())* < FECHABLOCO >
+  ( t = < OPMAIOR >  | t = < OPMENOR > | t = < OPDIF > | t = < OPIGUAL > )
+  { return t.image; }
 }
 
 
-void forIncremento() :
-{}
+Expression expLogica() :
 {
-    < IDENT > < ATRIBUICAO > expression()
+    Expression left;
+    Expression right;
+    String op;
+}
+{
+  left = expression() op = opLog() right = expression()
+  { return new BinaryExpression(left, op, right); }
 }
 
-void forStatement() :
-{}
+
+IfStatement ifStatement() :
 {
-    < FOR > < ABREPARENT > declaracao() expLogica() < FIMINSTRUC > forIncremento() < FECHAPARENT >
-    < ABREBLOCO > (statement())* < FECHABLOCO >
+    Expression cond;
+    Block thenBlock = new Block();
+    Block elseBlock = null;
+    Statement stmt;
+}
+{
+    < IF > < ABREPARENT > cond = expLogica() < FECHAPARENT >
+    < ABREBLOCO > (stmt = statement() { thenBlock.addStatement(stmt); })* < FECHABLOCO >
+    ( < ELSE > < ABREBLOCO > { elseBlock = new Block(); } (stmt = statement() { elseBlock.addStatement(stmt); })* < FECHABLOCO > )?
+    { return new IfStatement(cond, thenBlock, elseBlock); }
+}
+
+WhileStatement whileStatement() :
+{
+    Expression cond;
+    Block body = new Block();
+    Statement stmt;
+}
+{
+    < WHILE > < ABREPARENT > cond = expLogica() < FECHAPARENT >
+    < ABREBLOCO > (stmt = statement() { body.addStatement(stmt); })* < FECHABLOCO >
+    { return new WhileStatement(cond, body); }
+}
+
+
+Assignment forIncremento() :
+{
+    Token id;
+    Expression expr;
+}
+{
+    id = < IDENT > < ATRIBUICAO > expr = expression()
+    { return new Assignment(id.image, expr); }
+}
+
+ForStatement forStatement() :
+{
+    Declaration init;
+    Expression cond;
+    Statement inc;
+    Block body = new Block();
+    Statement stmt;
+}
+{
+    < FOR > < ABREPARENT > init = declaracao() cond = expLogica() < FIMINSTRUC > inc = forIncremento() < FECHAPARENT >
+    < ABREBLOCO > (stmt = statement() { body.addStatement(stmt); })* < FECHABLOCO >
+    { return new ForStatement(init, cond, inc, body); }
 }
