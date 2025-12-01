@@ -1,0 +1,301 @@
+options
+{
+  static = false;
+  LOOKAHEAD = 2;
+  MULTI = true;
+  NODE_DEFAULT_VOID = false;
+  VISITOR = true;
+}
+
+PARSER_BEGIN(ParaCompiler)
+package compiler;
+
+import java.util.*;
+import java.io.*;
+
+public class ParaCompiler {
+
+  // Lista de erros e tokens
+  public static List<String> errors = new ArrayList<String>();
+  public static List<String> tokens = new ArrayList<String>();
+  
+  public static void addToken(String token) {
+      tokens.add(token);
+  }
+  
+  public static void addError(String msg, int line, int col) {
+      errors.add(String.format("Linha %d, Col %d: %s", line, col, msg));
+  }
+  
+  // SINCRONIZAÇÃO DE PÂNICO
+  void recover(ParseException e, int... syncTokens) throws ParseException {
+      addError("CAVALO MORDEU TUA CABEÇA? " + e.getMessage(), 
+               e.currentToken.beginLine, 
+               e.currentToken.beginColumn);
+      
+      Token t;
+      do {
+          t = getNextToken();
+      } while (!isSync(t.kind, syncTokens) && t.kind != EOF);
+  }
+  
+  boolean isSync(int kind, int[] sync) {
+      for (int s : sync) if (kind == s) return true;
+      return false;
+  }
+  
+  public static void main(String args[]) throws Exception {
+      ParaCompiler parser;
+      if (args.length == 0) {
+          parser = new ParaCompiler(System.in);
+      } else {
+          parser = new ParaCompiler(new FileInputStream(args[0]));
+      }
+      
+      errors.clear();
+      tokens.clear();
+      
+      try {
+          SimpleNode root = parser.program();
+          
+          System.out.println("\n========================================");
+          System.out.println("   RESULTADO DA COMPILAÇÃO");
+          System.out.println("========================================\n");
+          
+          if (errors.isEmpty()) {
+              System.out.println("✅ CÓDIGO ACEITO! Tá massa, bichão!\n");
+          } else {
+              System.out.println("❌ CÓDIGO REJEITADO! Tu é leso!\n");
+              System.out.println("ERROS ENCONTRADOS:");
+              for (String e : errors) {
+                  System.out.println("  • " + e);
+              }
+              System.out.println();
+          }
+          
+          System.out.println("TOKENS RECONHECIDOS:");
+          System.out.println("  " + String.join(" ", tokens));
+          
+          System.out.println("\n========================================");
+          System.out.println("   ÁRVORE SINTÁTICA ABSTRATA");
+          System.out.println("========================================\n");
+          root.dump("  ");
+          
+      } catch (Exception e) {
+          System.out.println("❌ ERRO FATAL: " + e.getMessage());
+          e.printStackTrace();
+      }
+  }
+}
+
+PARSER_END(ParaCompiler)
+
+SKIP : { 
+  " " 
+| "\r" 
+| "\t" 
+| "\n" 
+| "\u00A0" 
+| <"//" (~["\n","\r"])* ("\n"|"\r"|"\r\n")> 
+}
+
+TOKEN :
+{
+  < INICIOPROG   : "ohjata"     > { ParaCompiler.addToken("ohjata"); }
+| < ABREBLOCO    : "<"          > { ParaCompiler.addToken("<"); }
+| < FECHABLOCO   : ">"          > { ParaCompiler.addToken(">"); }
+| < FIMINSTRUC   : "."          > { ParaCompiler.addToken("."); }
+| < INICIAVAR    : "disk"       > { ParaCompiler.addToken("disk"); }
+| < FOR          : "dalhe"      > { ParaCompiler.addToken("dalhe"); }
+| < WHILE        : "caquiado"   > { ParaCompiler.addToken("caquiado"); }
+| < IF           : "emesmo"     > { ParaCompiler.addToken("emesmo"); }
+| < ELSE         : "masquando"  > { ParaCompiler.addToken("masquando"); }
+| < ATRIBUICAO   : "->"         > { ParaCompiler.addToken("->"); }
+| < TIPOCHAR     : "egua"       > { ParaCompiler.addToken("egua"); }
+| < TIPOINT      : "intera"     > { ParaCompiler.addToken("intera"); }
+| < TIPOFLOAT    : "meroubalogo"> { ParaCompiler.addToken("meroubalogo"); }
+| < OPMAIOR      : ">>"         > { ParaCompiler.addToken(">>"); }
+| < OPMENOR      : "<<"         > { ParaCompiler.addToken("<<"); }
+| < OPDIF        : "!="         > { ParaCompiler.addToken("!="); }
+| < OPIGUAL      : "=="         > { ParaCompiler.addToken("=="); }
+| < OPINC        : "++"         > { ParaCompiler.addToken("++"); }
+| < OPDEC        : "--"         > { ParaCompiler.addToken("--"); }
+| < ABREPARENT   : "{"          > { ParaCompiler.addToken("{"); }
+| < FECHAPARENT  : "}"          > { ParaCompiler.addToken("}"); }
+| < VIRGULA      : ","          > { ParaCompiler.addToken(","); }
+| < PLUS         : "+"          > { ParaCompiler.addToken("+"); }
+| < MINUS        : "-"          > { ParaCompiler.addToken("-"); }
+| < TIMES        : "*"          > { ParaCompiler.addToken("*"); }
+| < DIVIDE       : "/"          > { ParaCompiler.addToken("/"); }
+| < IDENT        : ["a"-"z","A"-"Z"](["a"-"z","A"-"Z","0"-"9"])* > 
+    { ParaCompiler.addToken("IDENT:" + image); }
+| < NUM          : (<DIGITO>)+ ("." (<DIGITO>)+)? > 
+    { ParaCompiler.addToken("NUM:" + image); }
+| < STRING_LITERAL : "\"" (~["\""])* "\"" > 
+    { ParaCompiler.addToken("STRING:" + image); }
+| < #DIGITO      : ["0"-"9"] >
+}
+
+// ============================================
+// REGRAS GRAMATICAIS COM ANOTAÇÃO DE ÁRVORE
+// ============================================
+
+// #NomeDoNo cria um nó na árvore
+SimpleNode program() #Program : {}
+{
+    try {
+        <INICIOPROG> <ABREBLOCO> 
+        (statement())* 
+        <FECHABLOCO> <EOF>
+        { return jjtThis; }
+    } catch (ParseException e) {
+        recover(e, FECHABLOCO, EOF);
+        { return jjtThis; }
+    }
+}
+
+void statement() #Statement : {}
+{
+    try {
+        (
+            (declaracao() | atribuicao() | expression()) <FIMINSTRUC>
+          | ifStatement() 
+          | whileStatement() 
+          | forStatement() 
+        ) 
+    } catch (ParseException e) {
+        recover(e, FIMINSTRUC, FECHABLOCO);
+    }
+}
+
+void atribuicao() #Atribuicao : 
+{
+    Token id;
+}
+{
+    id = <IDENT> { jjtThis.jjtSetValue(id.image); }
+    <ATRIBUICAO> 
+    expression()
+}
+
+void declaracao() #Declaracao : 
+{
+    Token tipo;
+}
+{
+    <INICIAVAR> 
+    tipo = tipoDado() { jjtThis.jjtSetValue(tipo.image); }
+    listaIdentificadores()
+}
+
+Token tipoDado() : 
+{
+    Token t;
+}
+{
+    (t = <TIPOCHAR> | t = <TIPOFLOAT> | t = <TIPOINT>)
+    { return t; }
+}
+
+void identifier() #Ident : 
+{
+    Token t;
+}
+{
+    t = <IDENT> { jjtThis.jjtSetValue(t.image); }
+}
+
+void listaIdentificadores() #ListaId : 
+{}
+{
+    identifier()
+    (<ATRIBUICAO> expression())?
+    (
+        <VIRGULA> 
+        identifier()
+        (<ATRIBUICAO> expression())?
+    )*
+}
+
+void expression() #Expression : {}
+{
+    term() 
+    (
+        (<PLUS> | <MINUS>) term()
+    )*
+}
+
+void term() #Term : {}
+{
+    factor() 
+    (
+        (<TIMES> | <DIVIDE>) factor()
+    )*
+}
+
+void factor() #Factor : 
+{
+    Token t;
+}
+{
+    t = <NUM> { jjtThis.jjtSetValue(t.image); }
+  | t = <IDENT> { jjtThis.jjtSetValue(t.image); }
+  | t = <STRING_LITERAL> { jjtThis.jjtSetValue(t.image); }
+  | (<ABREPARENT> expression() <FECHAPARENT>)
+}
+
+void opLog() #OpLog : 
+{
+    Token t;
+}
+{
+    (t = <OPMAIOR> | t = <OPMENOR> | t = <OPDIF> | t = <OPIGUAL>)
+    { jjtThis.jjtSetValue(t.image); }
+}
+
+void expLogica() #ExpLogica : {}
+{
+    expression() opLog() expression()
+}
+
+void ifStatement() #If : {}
+{
+    try {
+        <IF> <ABREPARENT> expLogica() <FECHAPARENT>
+        <ABREBLOCO> (statement())* <FECHABLOCO>
+        (<ELSE> <ABREBLOCO> (statement())* <FECHABLOCO>)?
+    } catch (ParseException e) {
+        recover(e, FECHABLOCO, FIMINSTRUC);
+    }
+}
+
+void whileStatement() #While : {}
+{
+    try {
+        <WHILE> <ABREPARENT> expLogica() <FECHAPARENT>
+        <ABREBLOCO> (statement())* <FECHABLOCO>
+    } catch (ParseException e) {
+        recover(e, FECHABLOCO, FIMINSTRUC);
+    }
+}
+
+void forIncremento() #ForInc : 
+{
+    Token id;
+}
+{
+    id = <IDENT> { jjtThis.jjtSetValue(id.image); }
+    <ATRIBUICAO> expression()
+}
+
+void forStatement() #For : {}
+{
+    try {
+        <FOR> <ABREPARENT> 
+        declaracao() expLogica() <FIMINSTRUC> forIncremento() 
+        <FECHAPARENT>
+        <ABREBLOCO> (statement())* <FECHABLOCO>
+    } catch (ParseException e) {
+        recover(e, FECHABLOCO, FIMINSTRUC);
+    }
+}

@@ -1,0 +1,10 @@
+ohjata <
+  disk intera x -> 10 .
+  disk intera y -> 20 .
+  disk intera z.
+  z -> x + y .
+  
+  emesmo {x < y} <
+    disk intera w -> 100 .
+  >
+>

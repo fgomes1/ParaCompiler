@@ -1,0 +1,15 @@
+ohjata <
+  disk intera x -> 10.
+  
+  // Erro aqui: falta ponto e vírgula (ou ponto, no caso dessa linguagem)
+  disk intera y -> 20
+  
+  // O compilador deve se recuperar e ler isto:
+  disk intera z -> 30.
+  
+  // Outro erro
+  z -> x + .
+  
+  // Deve recuperar e ler isto
+  disk intera w -> 50.
+>
