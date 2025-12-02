@@ -2,8 +2,7 @@
 /* JavaCCOptions:MULTI=true,NODE_USES_PARSER=false,VISITOR=true,TRACK_TOKENS=false,NODE_PREFIX=AST,NODE_EXTENDS=,NODE_FACTORY=,SUPPORT_CLASS_VISIBILITY_PUBLIC=true */
 package compiler;
 
-public
-class SimpleNode implements Node {
+public class SimpleNode implements Node {
 
   protected Node parent;
   protected Node[] children;
@@ -26,8 +25,13 @@ class SimpleNode implements Node {
   public void jjtClose() {
   }
 
-  public void jjtSetParent(Node n) { parent = n; }
-  public Node jjtGetParent() { return parent; }
+  public void jjtSetParent(Node n) {
+    parent = n;
+  }
+
+  public Node jjtGetParent() {
+    return parent;
+  }
 
   public void jjtAddChild(Node n, int i) {
     if (children == null) {
@@ -48,18 +52,21 @@ class SimpleNode implements Node {
     return (children == null) ? 0 : children.length;
   }
 
-  public void jjtSetValue(Object value) { this.value = value; }
-  public Object jjtGetValue() { return value; }
+  public void jjtSetValue(Object value) {
+    this.value = value;
+  }
+
+  public Object jjtGetValue() {
+    return value;
+  }
 
   /** Accept the visitor. **/
-  public Object jjtAccept(ParaCompilerVisitor visitor, Object data)
-{
+  public Object jjtAccept(ParaCompilerVisitor visitor, Object data) {
     return visitor.visit(this, data);
   }
 
   /** Accept the visitor. **/
-  public Object childrenAccept(ParaCompilerVisitor visitor, Object data)
-{
+  public Object childrenAccept(ParaCompilerVisitor visitor, Object data) {
     if (children != null) {
       for (int i = 0; i < children.length; ++i) {
         children[i].jjtAccept(visitor, data);
@@ -68,29 +75,100 @@ class SimpleNode implements Node {
     return data;
   }
 
-  /* You can override these two methods in subclasses of SimpleNode to
-     customize the way the node appears when the tree is dumped.  If
-     your output uses more than one line you should override
-     toString(String), otherwise overriding toString() is probably all
-     you need to do. */
+  /*
+   * You can override these two methods in subclasses of SimpleNode to
+   * customize the way the node appears when the tree is dumped. If
+   * your output uses more than one line you should override
+   * toString(String), otherwise overriding toString() is probably all
+   * you need to do.
+   */
 
   public String toString() {
     return ParaCompilerTreeConstants.jjtNodeName[id];
   }
-  public String toString(String prefix) { return prefix + toString(); }
 
-  /* Override this method if you want to customize how the node dumps
-     out its children. */
+  public String toString(String prefix) {
+    return prefix + toString();
+  }
+
+  /*
+   * Override this method if you want to customize how the node dumps
+   * out its children.
+   */
 
   public void dump(String prefix) {
     System.out.println(toString(prefix));
     if (children != null) {
       for (int i = 0; i < children.length; ++i) {
-        SimpleNode n = (SimpleNode)children[i];
+        SimpleNode n = (SimpleNode) children[i];
         if (n != null) {
           n.dump(prefix + " ");
         }
       }
+    }
+  }
+
+  /**
+   * Export this node and its children as JSON for visualization.
+   * 
+   * @return JSON string representation of the AST
+   */
+  public String toJSON() {
+    StringBuilder sb = new StringBuilder();
+    toJSONHelper(sb, 0);
+    return sb.toString();
+  }
+
+  /**
+   * Recursive helper method to build JSON representation.
+   * 
+   * @param sb     StringBuilder to append JSON to
+   * @param indent Current indentation level
+   */
+  private int toJSONHelper(StringBuilder sb, int indent) {
+    sb.append("{\n");
+    addIndent(sb, indent + 1);
+    sb.append("\"type\": \"").append(toString()).append("\"");
+
+    if (value != null) {
+      sb.append(",\n");
+      addIndent(sb, indent + 1);
+      sb.append("\"value\": \"").append(value.toString().replace("\"", "\\\"")).append("\"");
+    }
+
+    sb.append(",\n");
+    addIndent(sb, indent + 1);
+    sb.append("\"children\": [");
+
+    if (children != null && children.length > 0) {
+      sb.append("\n");
+      for (int i = 0; i < children.length; i++) {
+        if (children[i] != null) {
+          addIndent(sb, indent + 2);
+          ((SimpleNode) children[i]).toJSONHelper(sb, indent + 2);
+          if (i < children.length - 1)
+            sb.append(",");
+          sb.append("\n");
+        }
+      }
+      addIndent(sb, indent + 1);
+    }
+
+    sb.append("]\n");
+    addIndent(sb, indent);
+    sb.append("}");
+    return indent;
+  }
+
+  /**
+   * Helper method to add indentation to JSON output.
+   * 
+   * @param sb     StringBuilder to append to
+   * @param indent Number of indentation levels
+   */
+  private void addIndent(StringBuilder sb, int indent) {
+    for (int i = 0; i < indent; i++) {
+      sb.append("  ");
     }
   }
 
@@ -99,4 +177,7 @@ class SimpleNode implements Node {
   }
 }
 
-/* JavaCC - OriginalChecksum=e1bdd6d625c942269c7928685c715f14 (do not edit this line) */
+/*
+ * JavaCC - OriginalChecksum=e1bdd6d625c942269c7928685c715f14 (do not edit this
+ * line)
+ */

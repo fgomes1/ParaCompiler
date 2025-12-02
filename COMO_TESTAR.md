@@ -123,6 +123,89 @@ Remove-Item -Recurse -Force bin\* ; javac -d bin -sourcepath src src\compiler\*.
 
 ---
 
+---
+
+## 🌳 Visualização da Árvore Sintática
+
+### Exportar Árvore em JSON
+
+Para obter a árvore sintática em formato JSON (útil para integração com Electron/JavaScript):
+
+```bash
+java -cp bin compiler.ParaCompiler tests\teste_sucesso.para --json
+```
+
+**Exemplo de saída JSON:**
+```json
+{
+  "type": "Program",
+  "children": [
+    {
+      "type": "Statement",
+      "children": [
+        {
+          "type": "Declaracao",
+          "value": "intera",
+          "children": [ ... ]
+        }
+      ]
+    }
+  ]
+}
+```
+
+### Visualizar no Navegador
+
+Abra o arquivo de demonstração incluído no projeto:
+
+```bash
+# Windows
+start VsPara\tree-viewer.html
+
+# Ou acesse diretamente
+explorer.exe VsPara\tree-viewer.html
+```
+
+A página permite:
+- ✅ Colar JSON da árvore
+- ✅ Visualização interativa (clique para expandir/colapsar)
+- ✅ Carregar exemplo pré-definido
+- ✅ Sem necessidade de instalar bibliotecas
+
+### Integração com Electron IDE
+
+O módulo `VsPara\tree-visualizer.js` fornece três opções de renderização:
+
+**1. HTML Puro (recomendado para começar):**
+```javascript
+const { renderTreeAsHTML, compileAndGetTree } = require('./tree-visualizer.js');
+
+// Compilar e obter árvore
+compileAndGetTree('caminho/arquivo.para').then(treeData => {
+    renderTreeAsHTML(treeData, 'tree-container');
+});
+```
+
+**2. vis.js Network (interativo com drag & drop):**
+```bash
+npm install vis-network
+```
+```javascript
+const { renderTreeWithVisJS } = require('./tree-visualizer.js');
+renderTreeWithVisJS(treeData, 'tree-container');
+```
+
+**3. D3.js (profissional):**
+```bash
+npm install d3
+```
+```javascript
+const { renderTreeWithD3 } = require('./tree-visualizer.js');
+renderTreeWithD3(treeData, 'tree-container');
+```
+
+---
+
 ## ✨ Dicas
 
 - Use `>>` para redirecionar a saída para um arquivo:

@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>ParaCompiler - Visualizador de Árvore Sintática</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: #f0f0f0;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: #4CAF50;
+        }
+
+        textarea {
+            width: 100%;
+            height: 200px;
+            font-family: monospace;
+            margin: 10px 0;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 4px;
+        }
+
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+
+        button:hover {
+            background: #45a049;
+        }
+
+        #tree-container {
+            margin-top: 20px;
+            min-height: 300px;
+        }
+
+        .tree-node {
+            margin-left: 20px;
+        }
+
+        .tree-label {
+            cursor: pointer;
+            padding: 5px 10px;
+            margin: 2px;
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border-radius: 4px;
+        }
+
+        .tree-label:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .tree-children {
+            margin-top: 5px;
+        }
+
+        .tree-children.collapsed {
+            display: none;
+        }
+
+        .info {
+            background: #e3f2fd;
+            padding: 15px;
+            margin: 10px 0;
+            border-left: 4px solid #2196F3;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>🌳 ParaCompiler - Visualizador de Árvore Sintática</h1>
+
+        <div class="info">
+            <strong>Como usar:</strong><br>
+            1. Cole o JSON gerado pelo compilador abaixo<br>
+            2. Clique em "Renderizar Árvore"<br>
+            <br>
+            <strong>Gerar JSON:</strong> <code>java -cp bin compiler.ParaCompiler arquivo.para --json</code>
+        </div>
+
+        <textarea id="json-input" placeholder="Cole aqui o JSON da árvore..."></textarea>
+        <br>
+        <button onclick="renderTree()">Renderizar Árvore</button>
+        <button onclick="loadExample()">Carregar Exemplo</button>
+
+        <div id="tree-container"></div>
+    </div>
+
+    <script>
+        const EXAMPLE_JSON = {
+            "type": "Program",
+            "children": [
+                {
+                    "type": "Statement",
+                    "children": [
+                        {
+                            "type": "Declaracao",
+                            "value": "intera",
+                            "children": [
+                                {
+                                    "type": "tipoDado",
+                                    "children": []
+                                },
+                                {
+                                    "type": "ListaId",
+                                    "children": [
+                                        {
+                                            "type": "Ident",
+                                            "value": "x",
+                                            "children": []
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        };
+
+        function loadExample() {
+            document.getElementById('json-input').value = JSON.stringify(EXAMPLE_JSON, null, 2);
+        }
+
+        function renderTree() {
+            const jsonInput = document.getElementById('json-input').value.trim();
+            const container = document.getElementById('tree-container');
+
+            if (!jsonInput) {
+                container.innerHTML = '<p style="color: red;">Cole o JSON primeiro!</p>';
+                return;
+            }
+
+            try {
+                const treeData = JSON.parse(jsonInput);
+                container.innerHTML = buildTreeHTML(treeData);
+
+                // Adicionar eventos de clique
+                document.querySelectorAll('.tree-label').forEach(label => {
+                    label.addEventListener('click', function (e) {
+                        e.stopPropagation();
+                        const children = this.nextElementSibling;
+                        if (children && children.classList.contains('tree-children')) {
+                            children.classList.toggle('collapsed');
+                        }
+                    });
+                });
+            } catch (e) {
+                container.innerHTML = '<p style="color: red;">Erro ao parsear JSON: ' + e.message + '</p>';
+            }
+        }
+
+        function buildTreeHTML(node) {
+            const hasChildren = node.children && node.children.length > 0;
+            const toggle = hasChildren ? '▼ ' : '';
+
+            let html = '<div class="tree-node">';
+            html += '<div class="tree-label">';
+            html += toggle + '<strong>' + node.type + '</strong>';
+            if (node.value) {
+                html += ' <span style="background: rgba(255,255,255,0.3); padding: 2px 6px; border-radius: 3px;">= ' + node.value + '</span>';
+            }
+            html += '</div>';
+
+            if (hasChildren) {
+                html += '<div class="tree-children">';
+                node.children.forEach(child => {
+                    html += buildTreeHTML(child);
+                });
+                html += '</div>';
+            }
+
+            html += '</div>';
+            return html;
+        }
+
+        // Carregar exemplo ao iniciar
+        window.onload = function () {
+            loadExample();
+            renderTree();
+        };
+    </script>
+</body>
+
+</html>
