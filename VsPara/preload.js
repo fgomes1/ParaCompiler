@@ -11,5 +11,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
     compile: (code) => ipcRenderer.invoke('compile:code', code),
     renameFile: (oldPath, newPath) => ipcRenderer.invoke('file:rename', oldPath, newPath),
     deleteFile: (filePath) => ipcRenderer.invoke('file:delete', filePath),
-    readFolder: (folderPath) => ipcRenderer.invoke('file:readFolder', folderPath)
+    readFolder: (folderPath) => ipcRenderer.invoke('file:readFolder', folderPath),
+    compileWithJson: (code) => ipcRenderer.invoke('compile:with-json', code)
 });

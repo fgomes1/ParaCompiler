@@ -465,3 +465,197 @@ body {
   background-color: #454545;
   margin: 4px 0;
 }
+/* Tabs e Right Sidebar */
+.right-sidebar {
+    width: 400px;
+    background-color: #1e1e1e;
+    border-left: 1px solid #3e3e42;
+    display: flex;
+    flex-direction: column;
+}
+
+.tab-header {
+    display: flex;
+    background-color: #2d2d30;
+    border-bottom: 1px solid #3e3e42;
+}
+
+.tab-button {
+    padding: 8px 20px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    background: transparent;
+    color: #858585;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+}
+
+.tab-button:hover {
+    color: #d4d4d4;
+}
+
+.tab-button.active {
+    color: #d4d4d4;
+    border-bottom-color: #007acc;
+}
+
+.tab-content {
+    flex: 1;
+    overflow: hidden;
+    position: relative;
+}
+
+.tab-pane {
+    display: none;
+    height: 100%;
+    overflow-y: auto;
+}
+
+.tab-pane.active {
+    display: block;
+}
+
+.tree-content {
+    padding: 15px;
+    font-family: 'Consolas', monospace;
+    font-size: 13px;
+    height: 100%;
+    overflow-y: auto;
+}
+
+.tree-placeholder {
+    color: #858585;
+    text-align: center;
+    padding: 40px 20px;
+    font-style: italic;
+}
+
+/* Tree Visualization */
+.tree-node {
+    margin-left: 20px;
+}
+
+.tree-label {
+    cursor: pointer;
+    padding: 5px 10px;
+    margin: 2px 0;
+    display: inline-block;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    border-radius: 4px;
+    font-size: 12px;
+    transition: all 0.3s;
+}
+
+.tree-label:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+
+.tree-children {
+    margin-top: 5px;
+}
+
+.tree-children.collapsed {
+    display: none;
+}
+
+.tree-value {
+    background: rgba(255,255,255,0.2);
+    padding: 2px 6px;
+    border-radius: 3px;
+    margin-left: 8px;
+    font-size: 11px;
+}
+
+/* Sidebar Tabs */
+.sidebar-tabs {
+    display: flex;
+    background-color: #252526;
+    border-bottom: 1px solid #3e3e42;
+}
+
+.sidebar-tab {
+    flex: 1;
+    padding: 8px;
+    text-align: center;
+    font-size: 12px;
+    cursor: pointer;
+    color: #858585;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+}
+
+.sidebar-tab:hover {
+    color: #d4d4d4;
+    background-color: #2a2d2e;
+}
+
+.sidebar-tab.active {
+    color: #d4d4d4;
+    border-bottom-color: #007acc;
+    font-weight: 600;
+}
+
+.sidebar-view {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.tree-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 10px;
+    font-family: 'Consolas', monospace;
+    font-size: 12px;
+}
+
+.tree-placeholder {
+    color: #858585;
+    text-align: center;
+    padding: 20px;
+    font-style: italic;
+    font-size: 12px;
+}
+
+/* Tree Visualization Styles */
+.tree-node {
+    margin-left: 15px;
+}
+
+.tree-label {
+    cursor: pointer;
+    padding: 3px 6px;
+    margin: 1px 0;
+    display: inline-block;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    border-radius: 3px;
+    font-size: 11px;
+    transition: all 0.2s;
+}
+
+.tree-label:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.tree-children {
+    margin-top: 2px;
+}
+
+.tree-children.collapsed {
+    display: none;
+}
+
+.tree-value {
+    background: rgba(255,255,255,0.2);
+    padding: 1px 4px;
+    border-radius: 2px;
+    margin-left: 5px;
+    font-size: 10px;
+}

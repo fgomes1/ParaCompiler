@@ -45,11 +45,31 @@
 
         <div class="main-content">
             <div class="sidebar">
-                <div class="sidebar-header">
-                    <span>EXPLORADOR</span>
+                <div class="sidebar-tabs">
+                    <div class="sidebar-tab active" onclick="switchSidebar('explorer')" title="Explorador de Arquivos">
+                        📁 Arquivos
+                    </div>
+                    <div class="sidebar-tab" onclick="switchSidebar('tree')" title="Árvore Sintática">
+                        🌳 Árvore
+                    </div>
                 </div>
-                <div id="fileList" class="file-list">
-                    <div class="no-folder">Nenhuma pasta aberta</div>
+
+                <div id="explorer-view" class="sidebar-view">
+                    <div class="sidebar-header">
+                        <span>PROJETO</span>
+                    </div>
+                    <div id="fileList" class="file-list">
+                        <div class="no-folder">Nenhuma pasta aberta</div>
+                    </div>
+                </div>
+
+                <div id="tree-view" class="sidebar-view" style="display: none;">
+                    <div class="sidebar-header">
+                        <span>ESTRUTURA (AST)</span>
+                    </div>
+                    <div id="treeContainer" class="tree-content">
+                        <div class="tree-placeholder">Compile o código para visualizar a estrutura</div>
+                    </div>
                 </div>
             </div>
 

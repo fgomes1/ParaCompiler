@@ -163,6 +163,60 @@ ipcMain.handle('file:readFolder', async (event, folderPath) => {
     }
 });
 
+ipcMain.handle('compile:with-json', async (event, code) => {
+    return new Promise((resolve, reject) => {
+        const javaPath = 'java';
+        const classPath = path.join(__dirname, '..', 'bin');
+
+        // Criar arquivo temporário para stdin
+        const tempFile = path.join(__dirname, '..', 'temp_input.para');
+        fs.writeFileSync(tempFile, code, 'utf8');
+
+        const compiler = spawn(javaPath, [
+            '-cp', classPath,
+            'compiler.ParaCompiler',
+            tempFile,
+            '--json'
+        ], {
+            cwd: path.join(__dirname, '..')
+        });
+
+        let output = '';
+        let error = '';
+
+        compiler.stdout.on('data', (data) => {
+            output += data.toString();
+        });
+
+        compiler.stderr.on('data', (data) => {
+            error += data.toString();
+        });
+
+        compiler.on('close', (exitCode) => {
+            // Limpar arquivo temporário
+            try { fs.unlinkSync(tempFile); } catch (e) { }
+
+            // Extrair JSON
+            const jsonMatch = output.match(/JSON DA ÁRVORE.*?\n={40}\n\n([\s\S]*?)(?=\n\n|$)/);
+            let treeJson = null;
+
+            if (jsonMatch) {
+                try {
+                    treeJson = JSON.parse(jsonMatch[1].trim());
+                } catch (e) {
+                    console.error('Erro ao parsear JSON:', e);
+                }
+            }
+
+            resolve({ output, error, exitCode, treeJson });
+        });
+
+        compiler.on('error', (err) => {
+            reject({ error: err.message });
+        });
+    });
+});
+
 app.whenReady().then(() => {
     createWindow();
 

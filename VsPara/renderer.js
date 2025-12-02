@@ -219,18 +219,81 @@ async function compile() {
     updateConsole('🔄 Compilando...\n');
 
     try {
-        const result = await window.electronAPI.compile(code);
+        // Usar nova API que retorna JSON
+        const result = await window.electronAPI.compileWithJson(code);
 
         if (result.error) {
             updateConsole('❌ Erro:\n' + result.error);
         } else if (result.output) {
             updateConsole('✅ Saída:\n' + result.output);
+
+            // Se houver JSON da árvore, renderizar e mostrar aba
+            if (result.treeJson) {
+                renderTree(result.treeJson);
+                switchSidebar('tree');
+                updateConsole('\n🌳 Árvore sintática atualizada na aba lateral!');
+            }
         } else {
             updateConsole('⚠️ Nenhuma saída gerada.');
         }
     } catch (err) {
-        updateConsole('❌ Erro ao executar compilador:\n' + err.message + '\n\nVerifique se o Java está instalado e o código foi compilado.');
+        updateConsole('❌ Erro ao executar compilador:\n' + err.message + '\n\nVerifique se o Java está instalado.');
     }
+}
+
+// Sidebar Tab Switching
+window.switchSidebar = function (viewName) {
+    // Atualizar abas
+    document.querySelectorAll('.sidebar-tab').forEach(tab => {
+        tab.classList.remove('active');
+        if (tab.getAttribute('onclick').includes(viewName)) {
+            tab.classList.add('active');
+        }
+    });
+
+    // Atualizar views
+    document.getElementById('explorer-view').style.display = viewName === 'explorer' ? 'flex' : 'none';
+    document.getElementById('tree-view').style.display = viewName === 'tree' ? 'flex' : 'none';
+}
+
+function renderTree(treeData) {
+    const container = document.getElementById('treeContainer');
+    container.innerHTML = buildTreeHTML(treeData);
+
+    // Adicionar eventos de clique
+    container.querySelectorAll('.tree-label').forEach(label => {
+        label.addEventListener('click', function (e) {
+            e.stopPropagation();
+            const children = this.nextElementSibling;
+            if (children && children.classList.contains('tree-children')) {
+                children.classList.toggle('collapsed');
+            }
+        });
+    });
+}
+
+function buildTreeHTML(node) {
+    const hasChildren = node.children && node.children.length > 0;
+    const toggle = hasChildren ? '▼ ' : '';
+
+    let html = '<div class="tree-node">';
+    html += '<div class="tree-label">';
+    html += toggle + '<strong>' + node.type + '</strong>';
+    if (node.value) {
+        html += ' <span class="tree-value">= ' + node.value + '</span>';
+    }
+    html += '</div>';
+
+    if (hasChildren) {
+        html += '<div class="tree-children">';
+        node.children.forEach(child => {
+            html += buildTreeHTML(child);
+        });
+        html += '</div>';
+    }
+
+    html += '</div>';
+    return html;
 }
 
 function updateConsole(message) {
